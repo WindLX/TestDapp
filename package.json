@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "test": "npx vuilder test",
+    "help": "npx ts-node scripts/helper.ts",
+    "compile": "npx vuilder compile contracts/itemOwnership.solpp"
+  },
+  "dependencies": {
+    "@vite/vitejs-viteapi": "^2.3.19"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@vite/vuilder": "^0.1.0-alpha.23",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

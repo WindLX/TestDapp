@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: MIT
+pragma soliditypp >=0.8.0;
+
+import "./strings.sol";
+import "./openzeppelin/access/Ownable.sol";
+import "./openzeppelin/utils/Strings.sol";
+import "./openzeppelin/utils/math/SafeMath.sol";
+
+contract ItemFactory is Ownable {
+    using strings for *;
+    using Strings for uint256;
+    using SafeMath for uint256;
+
+    vitetoken token = vitetoken("tti_5649544520544f4b454e6e40");
+    uint createItemFee = 1 vite;
+    uint changeNameFee = 0.01 vite;
+
+    modifier onlyOwnerOf(uint _itemId) {
+        require(msg.sender == itemToOwner[_itemId], "You are not the owner of this item");
+        _;
+    }
+
+    modifier payVite(uint _fee) {
+        require(msg.token == token, "Please send vite rewards only.");
+        require(msg.value == _fee, "Must send tokens to fund award.");
+        _;
+    }
+
+    event NewItem(uint itemId, string name, string log);
+    event UpdateCreateItemFee(uint fee);
+    event UpdateChangeNameFee(uint fee);
+    event ChangeItemName(uint itemId, string oldName, string newName);
+
+    struct Item {
+        string name;
+    }
+
+    Item[] public items;
+
+    mapping (uint => address) itemToOwner;
+    mapping (address => uint) ownerItemCount;
+
+    function withdraw() external onlyOwner {
+        payable(owner()).transfer(token, balance(token));
+    }
+
+    function setCreateItemFee(uint _fee) external onlyOwner {
+        createItemFee = _fee;
+        emit UpdateCreateItemFee(_fee);
+    }
+
+    function setChangeNameFee(uint _fee) external onlyOwner {
+        changeNameFee = _fee;
+        emit UpdateChangeNameFee(_fee);
+    }
+
+    function createItem(string memory _name) public payable payVite(createItemFee) {
+        items.push(Item(_name));
+        uint id = items.length.sub(1);
+        itemToOwner[id] = msg.sender;
+        ownerItemCount[msg.sender] = ownerItemCount[msg.sender].add(1);
+        string memory log = "New Item ".toSlice().concat(id.toString().toSlice());
+        emit NewItem(id, _name, log);
+    }
+
+    function changeName(uint _itemId, string memory _newName) external payable payVite(changeNameFee) onlyOwnerOf(_itemId) {
+        string memory oldName = items[_itemId].name;
+        items[_itemId].name = _newName;
+        emit ChangeItemName(_itemId, oldName, _newName);
+    }
+
+    function getItemsByOwner(address _owner) external view returns(uint[] memory) {
+        uint[] memory result = new uint[](ownerItemCount[_owner]);
+        uint counter = 0;
+        for (uint i = 0; i < items.length; i++) {
+            if (itemToOwner[i] == _owner) {
+                result[counter] = i;
+                counter++;
+            }
+        }
+        return result;
+    }
+
+    function getOwnerByItem(uint _itemId) external view returns(address) {
+        return itemToOwner[_itemId];
+    }
+}
